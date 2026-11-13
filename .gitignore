@@ -22,3 +22,23 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Thu muc bien dich & dong goi Java / Maven / Gradle
+target/
+build/
+out/
+bin/
+
+# File cau hinh rieng cua tung IDE (tranh conflict giua cac may)
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+nbproject/private/
+.vscode/
+
+# File chua mat khau Database / bien moi truong ca nhan
+.env
+db.properties
+application-local.properties
