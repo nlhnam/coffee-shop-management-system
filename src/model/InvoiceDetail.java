@@ -38,7 +38,7 @@ public class InvoiceDetail implements Serializable {
         return unitPrice;
     }
 
-    // --- Phương thức Setter có kiểm tra (chỉ có setQuantity vì productId và unitPrice là final) ---
+
     public void setQuantity(int quantity) {
         if (quantity < 1) {
             throw new IllegalArgumentException("Số lượng phải >= 1");
