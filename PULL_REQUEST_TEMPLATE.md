@@ -38,4 +38,6 @@
 <!-- Dán kết quả chạy thử trên màn hình Console hoặc ghi chú các Test Case đã pass -->
 ```text
 Dán output chạy thử tại đây (ví dụ: thêm thành công SP01, chặn thành công khi nhập giá âm...)
+✅  new Product("SP01", "Pepsi", "DM03", -5000, 10, ProductStatus.SELLING) có báo lỗi giá
+✅  invoice.total() tính đúng với giảm giá 10%
 ```
