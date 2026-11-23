@@ -15,12 +15,17 @@ public class Invoice implements Identifiable<String>, Serializable {
     private List<InvoiceDetail> details = new ArrayList<>();
 
     public Invoice(String id, String staffId, LocalDateTime createdAt,
-                   PaymentMethod paymentMethod, int discountPercent, InvoiceStatus status) {
-        if (id == null || id.trim().isEmpty()) throw new IllegalArgumentException("Mã hóa đơn rỗng");
-        if (staffId == null || staffId.trim().isEmpty()) throw new IllegalArgumentException("Chưa chọn nhân viên");
-        if (createdAt == null) throw new IllegalArgumentException("Thiếu thời gian lập");
-        if (paymentMethod == null) throw new IllegalArgumentException("Chưa chọn phương thức thanh toán");
-        if (status == null) throw new IllegalArgumentException("Thiếu trạng thái");
+            PaymentMethod paymentMethod, int discountPercent, InvoiceStatus status) {
+        if (id == null || id.trim().isEmpty())
+            throw new IllegalArgumentException("Mã hóa đơn rỗng");
+        if (staffId == null || staffId.trim().isEmpty())
+            throw new IllegalArgumentException("Chưa chọn nhân viên");
+        if (createdAt == null)
+            throw new IllegalArgumentException("Thiếu thời gian lập");
+        if (paymentMethod == null)
+            throw new IllegalArgumentException("Chưa chọn phương thức thanh toán");
+        if (status == null)
+            throw new IllegalArgumentException("Thiếu trạng thái");
 
         this.id = id.trim();
         this.staffId = staffId.trim();
@@ -39,16 +44,20 @@ public class Invoice implements Identifiable<String>, Serializable {
 
     // Thêm món vào hóa đơn, trùng mã thì cộng dồn số lượng
     public void addItem(String productId, int quantity, double unitPrice) {
+        if (productId == null || productId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Thiếu mã sản phẩm");
+        }
         if (quantity < 1) {
             throw new IllegalArgumentException("Số lượng phải lớn hơn hoặc bằng 1");
         }
+        String cleanId = productId.trim().toUpperCase();
         for (InvoiceDetail item : details) {
-            if (item.getProductId().equals(productId)) {
+            if (item.getProductId().equals(cleanId)) {
                 item.setQuantity(item.getQuantity() + quantity);
                 return;
             }
         }
-        details.add(new InvoiceDetail(productId, quantity, unitPrice));
+        details.add(new InvoiceDetail(cleanId, quantity, unitPrice));
     }
 
     public double subtotal() {
@@ -63,12 +72,35 @@ public class Invoice implements Identifiable<String>, Serializable {
         return subtotal() * (100 - discountPercent) / 100.0;
     }
 
-    public String getId() { return id; }
-    public String getStaffId() { return staffId; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public PaymentMethod getPaymentMethod() { return paymentMethod; }
-    public int getDiscountPercent() { return discountPercent; }
-    public InvoiceStatus getStatus() { return status; }
-    public void setStatus(InvoiceStatus status) { this.status = status; }
-    public List<InvoiceDetail> getDetails() { return details; }
+    public String getId() {
+        return id;
+    }
+
+    public String getStaffId() {
+        return staffId;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public int getDiscountPercent() {
+        return discountPercent;
+    }
+
+    public InvoiceStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(InvoiceStatus status) {
+        this.status = status;
+    }
+
+    public List<InvoiceDetail> getDetails() {
+        return details;
+    }
 }

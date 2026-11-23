@@ -32,10 +32,10 @@ public class Staff implements Identifiable<String>, Serializable {
     }
 
     public void setId(String id) {
-        if (id == null || id.trim().isEmpty()) {
-            throw new IllegalArgumentException("Ma nhan vien khong duoc de trong");
+        if (id == null || !id.trim().toUpperCase().matches("^NV\\d{2}$")) {
+            throw new IllegalArgumentException("Mã nhân viên phải dạng NV01");
         }
-        this.id = id.trim();
+        this.id = id.trim().toUpperCase();
     }
 
     public void setName(String name) {
@@ -55,14 +55,14 @@ public class Staff implements Identifiable<String>, Serializable {
 
     public void setRole(StaffRole role) {
         if (role == null) {
-        throw new IllegalArgumentException("Vai tro khong duoc de trong");
+            throw new IllegalArgumentException("Vai tro khong duoc de trong");
         }
         this.role = role;
     }
 
     @Override
     public String toString() {
-        return "Staff{id='" + id + "', name='" + name + "', phone='" + phone + "', role=" + role + "}";
+        return String.format("%s | %-20s | SĐT: %s | %s", id, name, phone, role);
     }
-       
+
 }
