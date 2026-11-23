@@ -1,10 +1,11 @@
 package model;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Invoice {
+public class Invoice implements Identifiable<String>, Serializable {
     private String id;
     private String staffId;
     private LocalDateTime createdAt;

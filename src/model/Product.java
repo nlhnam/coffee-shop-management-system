@@ -1,7 +1,9 @@
 // src/model/Product.java
 package model;
 
-public class Product {
+import java.io.Serializable;
+
+public class Product implements Identifiable<String>, Serializable{
     private String id;
     private String name;
     private String categoryId;

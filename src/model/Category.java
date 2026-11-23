@@ -1,7 +1,9 @@
 // src/model/Category.java
 package model;
 
-public class Category {
+import java.io.Serializable;
+
+public class Category implements Identifiable<String>, Serializable {
     private String id;
     private String name;
 

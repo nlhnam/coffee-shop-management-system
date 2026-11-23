@@ -1,5 +1,5 @@
 package model;
 
-public class Identifiable {
-    
+public interface Identifiable<ID> {
+    ID getId();
 }

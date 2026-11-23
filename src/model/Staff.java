@@ -1,6 +1,8 @@
 package model;
 
-public class Staff {
+import java.io.Serializable;
+
+public class Staff implements Identifiable<String>, Serializable {
     private String id;
     private String name;
     private String phone;
