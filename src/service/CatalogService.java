@@ -1,19 +1,25 @@
 package service;
 
 
-
+import java.util.Optional;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import exception.BusinessException;
 import exception.DuplicateIdException;
 import exception.NotFoundException;
 import model.Category;
+import model.Criteria.ProductSort;
+import model.Criteria.ProductCriteria;
+import model.Page;
 import model.Product;
 import model.ProductStatus;
 import repository.Repositories;
 import repository.Repositories.CategoryRepository;
 import repository.Repositories.InvoiceRepository;
 import repository.Repositories.ProductRepository;
+
 
 public class CatalogService {
     private final Repositories.CategoryRepository categoryRepo;
@@ -38,7 +44,7 @@ public class CatalogService {
         }
 
     // Cập nhật danh mục
-    public void UpdateCategory(Category category) throws NotFoundException{
+    public void updateCategory(Category category) throws NotFoundException{
         categoryRepo.update(category);
     }
 
@@ -86,11 +92,6 @@ public class CatalogService {
     // Xoá sản phẩm
     public void deleteProduct(String id) throws NotFoundException, BusinessException{
 
-        // Kiểm tra sản phẩm có tồn tại không
-        if (!productRepo.existsById(id)) {
-            throw new NotFoundException("sản phẩm", id);
-        }
-
         // Ktra sản phẩm đã xuất hiện trong hóa đơn chưa
         if(!invoiceRepo.existsByProduct(id)) {
             throw new BusinessException(
@@ -124,4 +125,82 @@ public class CatalogService {
 
             productRepo.addStock(quantities);
         }
+
+        // =====================================
+        // FR-08: TÌM KIẾM SẢN PHẨM
+        // =====================================
+
+        public Page<Product> searchProducts(
+                ProductCriteria criteria,
+                ProductSort sort,
+                int page,
+                int size) {
+
+            // 1. Lấy toàn bộ sản phẩm
+            List<Product> products = productRepo.findAll();
+
+            // 2. Lọc sản phẩm theo tiêu chí
+            List<Product> filteredProducts = products.stream()
+
+                // Tìm theo tên hoặc mã
+                .filter(p -> criteria == null ||
+                        criteria.matchesKeyword(p.getName(), p.getId()))
+
+                // Lọc theo danh mục
+                .filter(p -> criteria == null ||
+                        criteria.categoryId() == null ||
+                        criteria.categoryId().isBlank() ||
+                        p.getCategoryId().equalsIgnoreCase(criteria.categoryId()))
+
+                // Lọc theo giá tối thiểu
+                .filter(p -> criteria == null ||
+                        criteria.minPrice() == null ||
+                        p.getPrice() >= criteria.minPrice())
+
+                // Lọc theo giá tối đa
+                .filter(p -> criteria == null ||
+                        criteria.maxPrice() == null ||
+                        p.getPrice() <= criteria.maxPrice())
+
+                // Lọc theo trạng thái
+                .filter(p -> criteria == null ||
+                        criteria.status() == null ||
+                        p.getStatus() == criteria.status())
+
+                // Chỉ hiển thị sản phẩm có tồn kho dưới 10
+                .filter(p -> criteria == null ||
+                        !criteria.lowStockOnly() ||
+                        p.getStock() < 10)
+
+                .collect(Collectors.toList());
+
+            // 3. Sắp xếp
+            if (sort != null) {
+                filteredProducts.sort(sort.comparator());
+            }
+
+            // 4. Phân trang
+            return Page.of(filteredProducts, page, size);
+        }
+
+
+        // CÁC HÀM ĐỌC DỮ LIỆU CHO CATALOG MENU
+
+        public List<Category> getAllCategories() {
+            return categoryRepo.findAll();
+        }
+
+        public Optional<Category> findCategoryById(String id) {
+            return categoryRepo.findById(id);
+        }
+
+        public List<Product> getAllProducts() {
+            return productRepo.findAll();
+        }
+
+        public Optional<Product> findProductById(String id) {
+            return productRepo.findById(id);
+        }
 }
+
+
