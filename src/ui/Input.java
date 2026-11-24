@@ -172,4 +172,14 @@ public class Input {
             System.out.println("Lỗi: Vui lòng nhập y hoặc n.");
         }
     }
+    // thêm hàm integer với giới hạn min và max
+    public static int integer(String prompt, int min, int max) {
+    while (true) {
+        int val = integer(prompt);
+        if (val >= min && val <= max) {
+            return val;
+        }
+        System.out.println("Lỗi: Vui lòng nhập số từ " + min + " đến " + max + "!");
+    }
+}
 }

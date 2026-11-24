@@ -1,4 +1,4 @@
-package repository;
+package repository.memory;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -9,6 +9,8 @@ import java.util.Optional;
 import exception.DuplicateIdException;
 import exception.NotFoundException;
 import model.Category;
+import repository.Repositories;
+import repository.Repositories.CategoryRepository;
 
 public class InMemoryCategoryRepository implements Repositories.CategoryRepository {
     private Map<String, Category> categories = new LinkedHashMap<>();
