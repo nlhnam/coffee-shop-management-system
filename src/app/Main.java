@@ -12,6 +12,4 @@ import model.ProductStatus;
 
 public class Main{
     public static void main(String[] args) {
-            
-}
-}
+    }
