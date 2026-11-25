@@ -13,8 +13,8 @@ import model.ProductStatus;
 public class Main{
     public static void main(String[] args) {
             List<Product> products = new ArrayList<>();
-            // products.add(new Product("SP01", "Pepsi", "DM03", -5000, 10, ProductStatus.SELLING));
-            // products.add(new Product("SP02", "Coca", "DM03", 5000, 100, ProductStatus.SELLING));
+            products.add(new Product("SP01", "Pepsi", "DM03", -5000, 10, ProductStatus.SELLING));
+            products.add(new Product("SP02", "Coca", "DM03", 5000, 100, ProductStatus.SELLING));
             System.out.println(products);
 
 
