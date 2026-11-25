@@ -1,4 +1,4 @@
-package repository;
+package repository.memory;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -9,6 +9,9 @@ import java.util.stream.Collectors;
 import exception.DuplicateIdException;
 import exception.NotFoundException;
 import model.Product;
+import repository.Repositories;
+import repository.Repositories.ProductRepository;
+
 import java.util.Optional;
 
 public class InMemoryProductRepository implements Repositories.ProductRepository {
