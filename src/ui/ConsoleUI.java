@@ -2,8 +2,13 @@ package ui;
 
 import exception.BusinessException;
 import exception.NotFoundException;
+import model.Criteria.InvoiceCriteria;
+import model.Criteria.InvoiceSort;
+import model.Criteria.InvoiceSummary;
 import model.Invoice;
 import model.InvoiceDetail;
+import model.InvoiceStatus;
+import model.Page;
 import model.PaymentMethod;
 import model.Product;
 import model.ProductStatus;
@@ -11,14 +16,7 @@ import model.Staff;
 import repository.Repositories.StaffRepository;
 import service.SalesService;
 
-// [CHỜ BÌNH] Mở lại các dòng dưới đây sau khi Bình merge Page & Criteria:
-// import model.Criteria.InvoiceCriteria;
-// import model.Criteria.InvoiceSort;
-// import model.Criteria.InvoiceSummary;
-// import model.InvoiceStatus;
-// import model.Page;
-// import java.time.LocalDate;
-
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,11 +27,16 @@ public class ConsoleUI {
 
     private final StaffRepository staffRepo;
     private final SalesService sales;
+    private final CatalogMenu catalogMenu;
+    private final StaffMenu staffMenu;
     private Staff onShift;
 
-    public ConsoleUI(StaffRepository staffRepo, SalesService sales) {
+    public ConsoleUI(StaffRepository staffRepo, SalesService sales,
+                     CatalogMenu catalogMenu, StaffMenu staffMenu) {
         this.staffRepo = staffRepo;
         this.sales = sales;
+        this.catalogMenu = catalogMenu;
+        this.staffMenu = staffMenu;
     }
 
     public void start() {
@@ -50,39 +53,27 @@ public class ConsoleUI {
 
             int choice = Input.integer("Chọn chức năng: ", 0, 5);
             switch (choice) {
-                case 1:
-                    createInvoiceFlow();
-                    break;
-                case 2:
-                    invoiceMenu();
-                    break;
-                case 3:
-                    openCatalogMenu();
-                    break;
-                case 4:
-                    openStaffMenu();
-                    break;
-                case 5:
-                    openReportMenu();
-                    break;
-                case 0:
+                case 1 -> createInvoiceFlow();
+                case 2 -> invoiceMenu();
+                case 3 -> {
+                    if (catalogMenu != null) {
+                        catalogMenu.show();
+                    }
+                }
+                case 4 -> {
+                    if (staffMenu != null) {
+                        staffMenu.show(this::selectShiftStaff);
+                    } else {
+                        selectShiftStaff();
+                    }
+                }
+                case 5 -> System.out.println("Chức năng Thống kê doanh thu (FR-10) đang chờ Bình hoàn thiện và ghép nối.");
+                case 0 -> {
                     System.out.println("Đã thoát chương trình.");
                     return;
+                }
             }
         }
-    }
-
-    // Các hàm chờ ghép menu của Thiện, Tuấn, Bình
-    protected void openCatalogMenu() {
-        System.out.println("Chức năng Danh mục & Sản phẩm đang được ghép nối.");
-    }
-
-    protected void openStaffMenu() {
-        selectShiftStaff();
-    }
-
-    protected void openReportMenu() {
-        System.out.println("Chức năng Thống kê đang được ghép nối.");
     }
 
     public void selectShiftStaff() {
@@ -133,12 +124,7 @@ public class ConsoleUI {
                     continue;
                 }
 
-                // Cộng dồn số lượng nếu đã có trong giỏ
-                if (cart.containsKey(p.getId())) {
-                    cart.put(p.getId(), newQty);
-                } else {
-                    cart.put(p.getId(), qty);
-                }
+                cart.put(p.getId(), newQty);
                 printCartPreview(cart);
             }
 
@@ -204,25 +190,19 @@ public class ConsoleUI {
 
             int choice = Input.integer("Chọn: ", 0, 3);
             switch (choice) {
-                case 1:
-                    viewInvoiceByIdFlow();
-                    break;
-                case 2:
-                    cancelInvoiceFlow();
-                    break;
-                case 3:
-                    // [CHỜ BÌNH] Đổi dòng dưới thành: searchInvoicesFlow();
-                    System.out.println("Tính năng lọc phân trang sẽ mở sau khi Bình cập nhật Page & Criteria.");
-                    break;
-                case 0:
+                case 1 -> viewInvoiceByIdFlow();
+                case 2 -> cancelInvoiceFlow();
+                case 3 -> searchInvoicesFlow();
+                case 0 -> {
                     return;
+                }
             }
         }
     }
 
     private void viewInvoiceByIdFlow() {
         try {
-            String id = Input.required("Nhập mã hóa đơn (VD: HD20261124-0001): ");
+            String id = Input.required("Nhập mã hóa đơn (VD: HD20261125-0001): ");
             Invoice inv = sales.get(id);
             printInvoiceDetails(inv);
         } catch (NotFoundException e) {
@@ -232,7 +212,7 @@ public class ConsoleUI {
 
     private void cancelInvoiceFlow() {
         try {
-            String id = Input.required("Nhập mã hóa đơn cần hủy (VD: HD20261124-0001): ");
+            String id = Input.required("Nhập mã hóa đơn cần hủy (VD: HD20261125-0001): ");
             Invoice inv = sales.get(id);
             printInvoiceDetails(inv);
 
@@ -245,8 +225,6 @@ public class ConsoleUI {
         }
     }
 
-    // [CHỜ BÌNH] Mở lại hàm searchInvoicesFlow() sau khi Bình merge Page & Criteria:
-    /*
     private void searchInvoicesFlow() {
         try {
             System.out.println("\n=== TRA CỨU HÓA ĐƠN (Enter để bỏ qua tiêu chí) ===");
@@ -302,7 +280,6 @@ public class ConsoleUI {
             System.out.println("LỖI: " + e.getMessage());
         }
     }
-    */
 
     private void printInvoiceDetails(Invoice inv) throws NotFoundException {
         System.out.println("\n==========================================");

@@ -2,22 +2,19 @@ package repository.memory;
 
 import exception.BusinessException;
 import exception.NotFoundException;
+import model.Criteria.InvoiceCriteria;
+import model.Criteria.InvoiceSort;
+import model.Criteria.InvoiceSummary;
 import model.Invoice;
 import model.InvoiceDetail;
 import model.InvoiceStatus;
+import model.Page;
 import model.Product;
 import model.ProductStatus;
+import model.Staff;
 import repository.Repositories.InvoiceRepository;
 import repository.Repositories.ProductRepository;
 import repository.Repositories.StaffRepository;
-
-// [CHỜ BÌNH] Mở lại các dòng dưới đây khi mở hàm search():
-// import model.Criteria.InvoiceCriteria;
-// import model.Criteria.InvoiceSort;
-// import model.Criteria.InvoiceSummary;
-// import model.Page;
-// import model.Staff;
-// import java.util.Comparator;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -143,8 +140,6 @@ public class InMemoryInvoiceRepository implements InvoiceRepository {
         update(invoice);
     }
 
-    // [CHỜ BÌNH] Mở lại hàm search() sau khi Bình merge Page & Criteria:
-    /*
     @Override
     public Page<InvoiceSummary> search(InvoiceCriteria criteria, int page, int size) {
         List<Invoice> matched = new ArrayList<>();
@@ -157,7 +152,8 @@ public class InMemoryInvoiceRepository implements InvoiceRepository {
                 if (criteria.to() != null && inv.getCreatedAt().toLocalDate().isAfter(criteria.to())) {
                     continue;
                 }
-                if (criteria.staffId() != null && !inv.getStaffId().equalsIgnoreCase(criteria.staffId())) {
+                if (criteria.staffId() != null && !criteria.staffId().isBlank()
+                        && !inv.getStaffId().equalsIgnoreCase(criteria.staffId().trim())) {
                     continue;
                 }
                 if (criteria.status() != null && inv.getStatus() != criteria.status()) {
@@ -170,14 +166,14 @@ public class InMemoryInvoiceRepository implements InvoiceRepository {
             matched.add(inv);
         }
 
-        // Sắp xếp kết quả
-        if (criteria != null && criteria.sort() == InvoiceSort.TOTAL_DESC) {
-            matched.sort((a, b) -> Double.compare(b.total(), a.total()));
-        } else {
-            matched.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+        InvoiceSort sort = (criteria != null && criteria.sort() != null) ? criteria.sort() : InvoiceSort.DATE_DESC;
+        switch (sort) {
+            case DATE_ASC -> matched.sort((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()));
+            case TOTAL_DESC -> matched.sort((a, b) -> Double.compare(b.total(), a.total()));
+            case TOTAL_ASC -> matched.sort((a, b) -> Double.compare(a.total(), b.total()));
+            case DATE_DESC -> matched.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
         }
 
-        // Chuyển sang InvoiceSummary để hiển thị
         List<InvoiceSummary> summaries = new ArrayList<>();
         for (Invoice inv : matched) {
             String staffName = inv.getStaffId();
@@ -197,7 +193,6 @@ public class InMemoryInvoiceRepository implements InvoiceRepository {
 
         return Page.of(summaries, page, size);
     }
-    */
 
     @Override
     public boolean existsByProduct(String productId) {

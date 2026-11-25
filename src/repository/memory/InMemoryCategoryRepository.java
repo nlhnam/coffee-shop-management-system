@@ -9,63 +9,61 @@ import java.util.Optional;
 import exception.DuplicateIdException;
 import exception.NotFoundException;
 import model.Category;
-import repository.Repositories;
 import repository.Repositories.CategoryRepository;
 
-public class InMemoryCategoryRepository implements Repositories.CategoryRepository {
-    private Map<String, Category> categories = new LinkedHashMap<>();
+public class InMemoryCategoryRepository implements CategoryRepository {
+    private final Map<String, Category> categories = new LinkedHashMap<>();
 
-    //them category
-    @Override 
-    public void insert(Category category) throws DuplicateIdException{
+    @Override
+    public void insert(Category category) throws DuplicateIdException {
         String id = category.getId();
-
-        if (categories.containsKey(id)){
+        if (categories.containsKey(id)) {
             throw new DuplicateIdException("danh mục", id);
         }
-
         categories.put(id, category);
     }
 
-    //  tim danh muc theo ma
-    @Override 
-    public Optional<Category> findById(String id){
-        return Optional.ofNullable(categories.get(id));
+    @Override
+    public Optional<Category> findById(String id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(categories.get(id.trim().toUpperCase()));
     }
 
-    //Kiểm tra mã có tồn tại không
-    @Override 
-    public boolean existsById(String id){
-        return categories.containsKey(id);
+    @Override
+    public boolean existsById(String id) {
+        if (id == null) {
+            return false;
+        }
+        return categories.containsKey(id.trim().toUpperCase());
     }
 
-    // tim tat ca category
-    @Override 
+    @Override
     public List<Category> findAll() {
         return new ArrayList<>(categories.values());
     }
 
-    //cap nhat category
-    @Override 
+    @Override
     public boolean update(Category category) throws NotFoundException {
         String id = category.getId();
-
         if (!categories.containsKey(id)) {
             throw new NotFoundException("danh mục", id);
         }
-
         categories.put(id, category);
         return true;
     }
 
-    //Xoa category
-    @Override 
+    @Override
     public boolean deleteById(String id) throws NotFoundException {
-        if (!categories.containsKey(id)) {
+        if (id == null) {
             throw new NotFoundException("danh mục", id);
         }
-
-        categories.remove(id);
+        String key = id.trim().toUpperCase();
+        if (!categories.containsKey(key)) {
+            throw new NotFoundException("danh mục", id);
+        }
+        categories.remove(key);
         return true;
     }
 }

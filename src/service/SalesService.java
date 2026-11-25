@@ -11,10 +11,10 @@ import repository.Repositories.InvoiceRepository;
 import repository.Repositories.ProductRepository;
 import repository.Repositories.StaffRepository;
 
-// [CHỜ BÌNH] Mở lại 3 dòng này khi mở hàm search():
-// import model.Criteria.InvoiceCriteria;
-// import model.Criteria.InvoiceSummary;
-// import model.Page;
+
+import model.Criteria.InvoiceCriteria;
+import model.Criteria.InvoiceSummary;
+import model.Page;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -92,10 +92,10 @@ public class SalesService {
         return opt.get();
     }
 
-    // [CHỜ BÌNH] Mở lại hàm search() sau khi Bình merge Page & Criteria:
-    /*
+  
+ 
     public Page<InvoiceSummary> search(InvoiceCriteria criteria, int page, int size) {
         return invoiceRepo.search(criteria, page, size);
     }
-    */
+   
 }

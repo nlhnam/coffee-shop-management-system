@@ -32,23 +32,23 @@ public final class Criteria {
     }
 
     public record InvoiceCriteria(
-            LocalDate fromDate,
-            LocalDate toDate,
+            LocalDate from,
+            LocalDate to,
             String staffId,
             InvoiceStatus status,
-            PaymentMethod paymentMethod
+            PaymentMethod method,
+            InvoiceSort sort
     ) {}
 
     // ==================== DTO TÓM TẮT & THỐNG KÊ ====================
 
     public record InvoiceSummary(
-            String invoiceId,
+            String id,
             LocalDateTime createdAt,
-            String staffId,
             String staffName,
+            PaymentMethod method,
             InvoiceStatus status,
-            PaymentMethod paymentMethod,
-            double totalAmount
+            double total
     ) {}
 
     public record DailyRevenue(
