@@ -42,3 +42,6 @@ nbproject/private/
 .env
 db.properties
 application-local.properties
+# Du lieu File I/O cuc bo
+data/
+data-test/
