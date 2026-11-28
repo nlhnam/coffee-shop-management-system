@@ -1,263 +1,196 @@
-# Đặc tả yêu cầu – Đề tài 1: Quầy cà phê (POS)
+# ĐẶC TẢ YÊU CẦU & THIẾT KẾ HỆ THỐNG
+## Dự án: Hệ thống Quản lý Quán Cà Phê & Bán Hàng tại Quầy (Coffee Shop POS)
 
-> **Tài liệu chuẩn của nhóm phát triển (`coffee-shop-management-system`).**  
-> Tài liệu này xác định *phần mềm phải làm được gì* (Mục 1–7), *lộ trình triển khai theo tiến độ học* (Mục 8) và *thiết kế chi tiết các lớp* (Mục 9).
-
-| Thông tin dự án | Chi tiết |
-| :--- | :--- |
-| **Tên hệ thống** | Coffee Shop Management & POS System (`coffee-shop-management-system`) |
-| **Môn học / Quy mô** | MOB1024 · Nhóm 4 thành viên · 18 buổi |
-| **Cơ sở dữ liệu** | `cafe_pos` (SQL Server – Giai đoạn 2) |
-| **Nhóm thực hiện** | **Nam** (Leader), **Thiện**, **Tuấn**, **Bình** |
+* **Môn học:** MOB1024 – Lập trình Java 2 (FPT Polytechnic)
+* **Kho mã nguồn:** `https://github.com/nlhnam/coffee-shop-management-system`
+* **Công nghệ cốt lõi:** Java 17+, Java Collections & Stream API, File I/O & Serialization, SQL Server & JDBC, Custom Annotation & Reflection.
+* **Quy mô nhóm:** 5 thành viên.
 
 ---
 
-## 1. Tổng quan
+## 1. Tổng Quan Dự Án & Phân Công Thành Viên
 
-### 1.1 Mục tiêu
-Xây dựng phần mềm console phục vụ vận hành một quán cà phê nhỏ: thu ngân chọn món, lập hóa đơn nhiều món và thu tiền; tồn kho hàng hóa tự động giảm khi bán và hoàn lại khi hủy đơn; quản lý theo dõi danh mục, sản phẩm, nhân sự, nhập hàng và xem báo cáo thống kê doanh thu.
-* **Giai đoạn 1 (GĐ1):** Lưu trữ dữ liệu bằng tệp nhị phân (`data/*.dat`).
-* **Giai đoạn 2 (GĐ2):** Lưu trữ dữ liệu bằng SQL Server (`cafe_pos`), giữ nguyên toàn bộ giao diện và luồng xử lý nghiệp vụ.
+### 1.1. Mục tiêu & Phạm vi
+Hệ thống **Coffee Shop POS** được xây dựng theo kiến trúc phân tầng chuẩn (Layered Architecture + Repository Pattern) nhằm phục vụ nghiệp vụ bán hàng tại quầy, quản lý thực đơn, kiểm soát tồn kho, quản lý nhân viên trực ca và thống kê doanh thu quán cà phê.
 
-### 1.2 Phạm vi hệ thống
+Dự án triển khai xuyên suốt 2 giai đoạn học tập:
+* **Giai đoạn 1 (Bước 1 – Bước 5):** Hoàn thiện toàn bộ mô hình miền, xử lý ngoại lệ, nghiệp vụ POS, tìm kiếm/phân trang, thống kê Stream API, xuất báo cáo HTML và lưu trữ dữ liệu bền vững xuống tệp nhị phân (`data/*.dat`) kèm cơ chế tự phục hồi tệp lỗi (`.bak`).
+* **Giai đoạn 2 (Bước 6 – Bước 8):** Thiết kế cơ sở dữ liệu quan hệ SQL Server (`cafe_pos`), triển khai tầng truy cập dữ liệu JDBC (`PreparedStatement`, Transaction, Batch), chuyển đổi nguồn dữ liệu linh hoạt giữa File và SQL Server, di trú dữ liệu (Migration) và gắn siêu dữ liệu tác giả bằng `@Author` Reflection.
 
-| Trong phạm vi (Phải làm) | Ngoài phạm vi (Không cần làm) |
-| :--- | :--- |
-| Quản lý danh mục, sản phẩm, nhân viên, hóa đơn nhiều món | Đăng nhập bằng mật khẩu (chỉ cần chọn nhân viên trực ca) |
-| Bán hàng, tính giảm giá, hủy hóa đơn, nhập thêm hàng | Công thức pha chế, định lượng trừ nguyên liệu theo từng ly |
-| Tìm kiếm đa tiêu chí, sắp xếp, phân trang kết quả | Kết nối máy in hóa đơn vật lý, máy quẹt thẻ |
-| Thống kê doanh thu và xuất báo cáo ra tệp HTML | Giao diện đồ họa Swing/JavaFX (chỉ là điểm cộng) |
-| Chuyển đổi (di trú) dữ liệu từ File sang SQL Server | Phân quyền chi tiết theo từng nút bấm phức tạp |
+### 1.2. Bảng phân công 5 thành viên
 
-### 1.3 Người dùng & Phân quyền
-
-| Vai trò (`StaffRole`) | Quyền hạn chức năng |
-| :--- | :--- |
-| **Thu ngân (`CASHIER`)** | Chọn ca trực, lập hóa đơn bán hàng, tìm kiếm & xem danh sách sản phẩm |
-| **Quản lý (`MANAGER`)** | Toàn bộ quyền của Thu ngân + quản lý danh mục, sản phẩm, nhân viên, hủy hóa đơn, nhập hàng, tra cứu hóa đơn, xem thống kê, xuất báo cáo HTML và chuyển dữ liệu File $\rightarrow$ DB |
-
-### 1.4 Thuật ngữ nghiệp vụ
-
-| Thuật ngữ | Định nghĩa |
-| :--- | :--- |
-| **Hóa đơn (`Invoice`)** | Một lần thanh toán của khách hàng, bao gồm thông tin chung và danh sách các dòng chi tiết |
-| **Dòng chi tiết (`InvoiceDetail`)** | Một mặt hàng trong hóa đơn gồm mã sản phẩm, số lượng và đơn giá **tại thời điểm bán** |
-| **Tồn kho (`stock`)** | Số lượng sản phẩm hiện còn sẵn sàng để bán tại quán |
-| **Ngừng bán (`STOPPED`)** | Sản phẩm vẫn lưu trong hệ thống để bảo toàn lịch sử hóa đơn cũ nhưng không được phép bán mới |
+| STT | Thành viên | Vai trò | Nhánh Git | Phân hệ & Trách nhiệm chính |
+| :-: | :--- | :--- | :--- | :--- |
+| 1 | **Nam** (`nlhnam`) | **Tech Lead / Sales & Core** | `feat/sales` | • Thiết kế kiến trúc tổng thể, `GenericRepository`, Custom Exception.<br>• Nghiệp vụ bán hàng tại quầy (`FR-05`), hủy hóa đơn hoàn kho (`FR-06`), tìm kiếm hóa đơn (`FR-09`).<br>• Cài đặt `FileInvoiceRepository`, `JdbcInvoiceRepository` (Transaction lập & hủy đơn).<br>• Xây dựng `MigrationService` (`FR-14`), menu chọn nguồn dữ liệu (`FR-13`) và duyệt Pull Request. |
+| 2 | **Thiện** | **Catalog & Inventory** | `feat/catalog` | • Quản lý danh mục (`FR-01`) và sản phẩm (`FR-02`).<br>• Nhập kho theo lô đa sản phẩm (`FR-07`) sử dụng `JDBC Batch` trong Transaction.<br>• Tìm kiếm, lọc đa tiêu chí, sắp xếp và phân trang sản phẩm (`FR-08`).<br>• Cài đặt `FileCategoryRepository`, `FileProductRepository`, `JdbcCategoryRepository`, `JdbcProductRepository`. |
+| 3 | **Tuấn** | **Staff, UI & QA** | `feat/staff-ui` | • Quản lý nhân viên (`FR-03`) và chọn/đổi nhân viên trực ca (`FR-04`).<br>• Xây dựng `Input`, `SampleData` (30 hóa đơn mẫu đa trạng thái) và chuẩn hóa định dạng hiển thị (`NFR-06`).<br>• Truy vấn `JOIN` đa bảng và phân trang hóa đơn trên SQL Server (`FR-09`).<br>• Xây dựng và vận hành bộ kiểm thử tự động `SystemTestRunner`. |
+| 4 | **Bình** | **Statistics & Reporting** | `feat/report` | • Cấu trúc phân trang `Page<T>` và tiêu chí lọc `Criteria`.<br>• Phân hệ thống kê doanh thu (`FR-10`: 7 chỉ số `TK-01`..`TK-07` dùng Stream API, loại trừ đơn hủy `BR-08`).<br>• Giao diện `ReportMenu` và chức năng xuất báo cáo doanh thu ra tệp HTML chuẩn UTF-8 (`FR-11`). |
+| 5 | **Tín** | **Persistence & DB Infrastructure** | `feat/file-core`<br>`feat/db-core` | • **Giai đoạn 1 (`feat/file-core`):** Xây dựng lớp nền `FileRepository<T, ID>` đọc/ghi `data/*.dat`, cơ chế tự đổi tên tệp hỏng sang `.bak` (`NFR-05`) và cài đặt `FileStaffRepository`.<br>• **Giai đoạn 2 (`feat/db-core`):** Viết kịch bản SQL khởi tạo CSDL `cafe_pos` (`01_schema.sql`, `02_sample_data.sql`), xây dựng `DBConnect`, `SqlFilter`, `JdbcStaffRepository` và `@Author` Reflection. |
 
 ---
 
-## 2. Yêu cầu chức năng & Phân công thành viên
+## 2. Kiến Trúc Hệ Thống & Cấu Trúc Thư Mục
 
-*Quy ước: **GĐ1** = Lưu File `.dat`, **GĐ2** = Lưu SQL Server `cafe_pos`.*
+Hệ thống áp dụng **Repository Pattern** kết hợp **Dependency Injection** qua Constructor. Tầng `Service` và `UI` chỉ giao tiếp thông qua các interface trong `repository.Repositories`, hoàn toàn độc lập với cơ chế lưu trữ bên dưới (RAM, File `.dat` hay SQL Server).
 
-| Mã | Chức năng | Người dùng | GĐ1 | GĐ2 | Slide | Phụ trách |
-| :--- | :--- | :--- | :---: | :---: | :---: | :--- |
-| **FR-01** | Thêm / sửa / xóa / xem danh mục | Quản lý | ✔ | ✔ | 1, 2, 4 | **Thiện** |
-| **FR-02** | Thêm / sửa / xóa / xem sản phẩm, đổi trạng thái đang bán – ngừng bán | Quản lý | ✔ | ✔ | 1, 2, 4 | **Thiện** |
-| **FR-03** | Thêm / sửa / xóa / xem nhân viên | Quản lý | ✔ | ✔ | 1, 2 | **Tuấn** |
-| **FR-04** | Chọn nhân viên trực ca khi khởi động | Tất cả | ✔ | ✔ | 2 | **Tuấn** |
-| **FR-05** | **Lập hóa đơn nhiều món và thanh toán** | Thu ngân | ✔ | ✔ Transaction | 3, 4, 7 | **Nam** |
-| **FR-06** | **Hủy hóa đơn đã thanh toán, cộng trả tồn kho** | Quản lý | ✔ | ✔ Transaction | 4, 7 | **Nam** |
-| **FR-07** | **Nhập thêm hàng cho nhiều sản phẩm một lần** | Quản lý | ✔ | ✔ Batch | 7 | **Thiện** |
-| **FR-08** | Tìm sản phẩm nhiều tiêu chí + sắp xếp + phân trang | Tất cả | ✔ | ✔ | 3, 6 | **Thiện** |
-| **FR-09** | Tra cứu hóa đơn nhiều tiêu chí + phân trang, hiện tên nhân viên và tổng tiền | Quản lý | ✔ | ✔ JOIN | 3, 6 | **Tuấn** |
-| **FR-10** | Thống kê doanh thu (Mục 6) | Quản lý | ✔ | ✔ | 3, 8 | **Bình** |
-| **FR-11** | Xuất báo cáo doanh thu ra tệp HTML | Quản lý | ✔ | ✔ | 5, 8 | **Bình** |
-| **FR-12** | Lưu toàn bộ dữ liệu, mở lại chương trình dữ liệu còn nguyên | — | ✔ | ✔ | 5, 6 | **Bình** |
-| **FR-13** | Chọn nguồn dữ liệu File / SQL Server khi khởi động | — | ✔ | ✔ | 1, 4 | **Nam** |
-| **FR-14** | Chuyển dữ liệu từ File vào SQL Server | Quản lý | — | ✔ | 5, 6, 7 | **Nam** |
-
-### 2.1 Đặc tả chi tiết các chức năng trọng tâm
-
-#### `FR-05`: Lập hóa đơn nhiều món và thanh toán
-* **Đầu vào:** Nhân viên trực ca (`staffId`); danh sách cặp `(productId, quantity)`; phương thức thanh toán (`PaymentMethod`); phần trăm giảm giá (`0–50%`).
-* **Luồng xử lý chính:**
-  1. Thu ngân nhập mã sản phẩm và số lượng. Nếu nhập lại sản phẩm đã có trong giỏ hàng thì **cộng dồn** số lượng.
-  2. Sau mỗi lần thêm món, hiển thị bảng giỏ hàng hiện tại: mã/tên món, số lượng, đơn giá, thành tiền từng dòng và tổng tạm tính (`subtotal`).
-  3. Thu ngân chọn kết thúc chọn món, chọn phương thức thanh toán (`CASH`, `CARD`, `E_WALLET`) và nhập phần trăm giảm giá (`0–50%`).
-  4. Hệ thống hiển thị số tiền giảm, tổng tiền khách phải trả (`total`) và yêu cầu xác nhận.
-  5. Khi xác nhận: hệ thống tự sinh mã hóa đơn `HDyyyyMMdd-nnnn`, lưu hóa đơn trạng thái `PAID`, trừ tồn kho tương ứng của từng sản phẩm và thông báo thành công.
-* **Luồng ngoại lệ:** Mã sản phẩm không tồn tại $\rightarrow$ báo lỗi, cho nhập lại; sản phẩm đang `STOPPED` $\rightarrow$ chặn theo `BR-03`; số lượng vượt tồn kho $\rightarrow$ chặn theo `BR-04`; giỏ hàng rỗng mà xác nhận thanh toán $\rightarrow$ từ chối lập hóa đơn.
-* **Tiêu chí nghiệm thu:** Hóa đơn chỉ được tạo khi **tất cả** các món trong giỏ đều đủ tồn kho. Nếu có dù chỉ 1 món thiếu hàng ở bước lưu, toàn bộ giao dịch phải rollback: không món nào bị trừ kho và không sinh hóa đơn (`TC-02`).
-
-#### `FR-06`: Hủy hóa đơn đã thanh toán
-* **Đầu vào:** Mã hóa đơn cần hủy (`invoiceId`).
-* **Luồng xử lý chính:** Hiển thị thông tin hóa đơn và các dòng chi tiết $\rightarrow$ yêu cầu quản lý xác nhận $\rightarrow$ chuyển trạng thái hóa đơn sang `CANCELLED` $\rightarrow$ cộng hoàn trả lại số lượng tồn kho cho từng sản phẩm trong hóa đơn.
-* **Luồng ngoại lệ:** Không tìm thấy mã hóa đơn $\rightarrow$ báo lỗi `NotFoundException`; hóa đơn đã ở trạng thái `CANCELLED` trước đó $\rightarrow$ chặn theo `BR-06`.
-* **Tiêu chí nghiệm thu:** Cập nhật trạng thái hóa đơn và cộng trả tồn kho nằm trong cùng một Transaction (`TC-04`).
-
-#### `FR-07`: Nhập thêm hàng theo lô
-* **Đầu vào:** Danh sách các cặp `(productId, quantityAdded)`.
-* **Luồng xử lý chính:** Quản lý nhập liên tiếp mã sản phẩm và số lượng nhập thêm $\rightarrow$ xác nhận lưu lô nhập $\rightarrow$ cộng dồn số lượng vào `stock` của từng sản phẩm.
-* **Tiêu chí nghiệm thu:** Toàn bộ danh sách phải hợp lệ mới cập nhật; nếu có 1 mã sản phẩm sai hoặc số lượng $\le 0$, rollback toàn bộ lô nhập (`TC-06`).
-
----
-
-## 3. Quy tắc nghiệp vụ (`BR`)
-
-| Mã quy tắc | Nội dung ràng buộc bắt buộc |
-| :--- | :--- |
-| **BR-01** | **Duy nhất mã định danh:** Mã danh mục (`DM01`), sản phẩm (`SP01`), nhân viên (`NV01`), hóa đơn (`HDyyyyMMdd-nnnn`) không được trùng lặp. Nếu trùng ném `DuplicateIdException`. |
-| **BR-02** | **Hợp lệ dữ liệu đầu vào:** Tên không được rỗng; giá bán $> 0$; tồn kho $\ge 0$; số lượng mua/nhập $\ge 1$; giảm giá từ `0` đến `50%`; số điện thoại nhân viên gồm đúng 10 chữ số và bắt đầu bằng `0`. |
-| **BR-03** | **Trạng thái kinh doanh:** Không được phép thêm vào giỏ hoặc thanh toán sản phẩm đang có trạng thái `STOPPED` ("Ngừng bán"). |
-| **BR-04** | **Giới hạn tồn kho:** Tổng số lượng mua của một sản phẩm trong giỏ không được vượt quá tồn kho hiện có (`stock`). Kiểm tra cả lúc thêm món vào giỏ và lúc xác nhận thanh toán. |
-| **BR-05** | **Toàn vẹn tham chiếu khi xóa:** Không được xóa danh mục đang có sản phẩm thuộc về; không được xóa sản phẩm hoặc nhân viên đã phát sinh hóa đơn trong hệ thống. |
-| **BR-06** | **Điều kiện hủy đơn:** Chỉ cho phép hủy hóa đơn đang ở trạng thái `PAID`. Hóa đơn đã `CANCELLED` không được hủy lại lần hai. |
-| **BR-07** | **Bảo toàn lịch sử giá:** `InvoiceDetail` lưu cứng `unitPrice` tại thời điểm lập hóa đơn. Việc cập nhật giá mới cho `Product` sau này không được làm thay đổi giá trị các hóa đơn cũ. |
-| **BR-08** | **Phạm vi tính doanh thu:** Tất cả chỉ số doanh thu và số lượng bán ra chỉ tính trên các hóa đơn có trạng thái `PAID`, loại bỏ hoàn toàn các hóa đơn `CANCELLED`. |
-
----
-
-## 4. Dữ liệu mẫu & Lược đồ CSDL (`cafe_pos`)
-
-### 4.1 Dữ liệu mẫu khởi tạo (`SampleData`)
-Hệ thống cung cấp bộ dữ liệu mẫu chuẩn phục vụ kiểm thử ngay từ khi khởi động:
-* **4 Danh mục:** `DM01` (Cà phê), `DM02` (Trà & Trà sữa), `DM03` (Nước đóng chai), `DM04` (Bánh ngọt).
-* **15 Sản phẩm (`SP01`–`SP15`):** Phân bổ đều cho 4 danh mục; bao gồm sản phẩm tồn kho thấp (`stock < 10` như `SP08`, `SP10`, `SP15`) để kiểm thử cảnh báo hết hàng và sản phẩm ngừng bán (`SP12` – `STOPPED`) để kiểm thử `BR-03`.
-* **4 Nhân viên (`NV01`–`NV04`):** `NV01` (`MANAGER`), `NV02`–`NV04` (`CASHIER`).
-* **30 Hóa đơn mẫu (GĐ2):** Trải đều trong nhiều ngày, nhiều nhân viên lập đơn, đầy đủ 3 phương thức thanh toán và có cả đơn `PAID` lẫn `CANCELLED`.
-
-### 4.2 Cấu trúc bảng SQL Server (`cafe_pos`)
-1. **`categories`**: `id VARCHAR(10) PRIMARY KEY`, `name NVARCHAR(100) NOT NULL`
-2. **`products`**: `id VARCHAR(10) PRIMARY KEY`, `name NVARCHAR(150) NOT NULL`, `category_id VARCHAR(10) FOREIGN KEY`, `price DECIMAL(12,2) CHECK (price > 0)`, `stock INT CHECK (stock >= 0)`, `status VARCHAR(20) NOT NULL`
-3. **`staff`**: `id VARCHAR(10) PRIMARY KEY`, `name NVARCHAR(100) NOT NULL`, `phone VARCHAR(15) NOT NULL`, `role VARCHAR(20) NOT NULL`
-4. **`invoices`**: `id VARCHAR(20) PRIMARY KEY`, `staff_id VARCHAR(10) FOREIGN KEY`, `created_at DATETIME2 NOT NULL`, `payment_method VARCHAR(20) NOT NULL`, `discount_percent INT CHECK (discount_percent BETWEEN 0 AND 50)`, `status VARCHAR(20) NOT NULL`
-5. **`invoice_details`**: `invoice_id VARCHAR(20) FOREIGN KEY`, `product_id VARCHAR(10) FOREIGN KEY`, `quantity INT CHECK (quantity >= 1)`, `unit_price DECIMAL(12,2) CHECK (unit_price > 0)`, `PRIMARY KEY (invoice_id, product_id)`
-
----
-
-## 5. Yêu cầu phi chức năng (`NFR`)
-
-| Mã | Yêu cầu | Tiêu chuẩn áp dụng |
-| :--- | :--- | :--- |
-| **NFR-01** | **Chống crash khi nhập liệu** | Mọi thao tác nhập chuỗi, số nguyên, số thực, ngày tháng, chọn enum đều đi qua lớp tiện ích `ui.Input`; nhập sai định dạng thì báo lỗi tiếng Việt và yêu cầu nhập lại. |
-| **NFR-02** | **Kiến trúc phân tầng độc lập** | Tách biệt rõ `ui` $\rightarrow$ `service` $\rightarrow$ `repository` / `model`. Tuyệt đối không dùng `Scanner` hoặc `System.out.println` bên trong tầng `service`, `repository` và `model`. |
-| **NFR-03** | **An toàn truy vấn SQL** | 100% câu lệnh SQL có tham số đầu vào phải sử dụng `PreparedStatement` (`?`), tuyệt đối không nối chuỗi trực tiếp giá trị người dùng nhập. |
-| **NFR-04** | **Toàn vẹn giao dịch** | Các nghiệp vụ cập nhật nhiều bảng/nhiều dòng (lập hóa đơn, hủy hóa đơn, nhập kho theo lô, di trú dữ liệu) phải chạy trong `Transaction` (`setAutoCommit(false)`). |
-| **NFR-05** | **Phục hồi tệp hỏng (GĐ1)** | Khi đọc tệp `data/*.dat` nếu phát hiện tệp bị lỗi cấu trúc/hỏng dữ liệu, tự động đổi tên sao lưu sang `.bak` và khởi tạo tập rỗng an toàn. |
-| **NFR-06** | **Chuẩn định dạng hiển thị** | Tiền tệ hiển thị dạng `35,000 đ` (`#,### đ`); ngày giờ hiển thị dạng `dd/MM/yyyy HH:mm`. |
-
----
-
-## 6. Yêu cầu thống kê & Báo cáo (`FR-10`, `FR-11`)
-
-Tất cả chỉ số thống kê dưới đây áp dụng quy tắc **`BR-08`** (chỉ tính hóa đơn `PAID`):
-* **TK-01 – Doanh thu theo ngày:** Thống kê theo từng ngày gồm ngày, số lượng hóa đơn thành công và tổng doanh thu (`record DailyRevenue`).
-* **TK-02 – Top sản phẩm bán chạy:** Xếp hạng sản phẩm theo tổng số lượng bán ra và tổng doanh thu mang lại (`record ProductSales`).
-* **TK-03 – Doanh thu theo nhân viên:** Tổng hợp số đơn và tổng doanh thu từng nhân viên đã lập.
-* **TK-04 – Thống kê theo phương thức thanh toán:** Số lượng hóa đơn và tổng tiền theo từng hình thức (`Tiền mặt`, `Thẻ`, `Ví điện tử`).
-* **TK-05 – Tổng quan theo khoảng thời gian:** Tổng doanh thu, số đơn `PAID` và số đơn `CANCELLED` từ ngày A đến ngày B.
-* **TK-06 – Giá trị đơn trung bình (AOV):** `Tổng doanh thu / Tổng số hóa đơn PAID`.
-* **TK-07 – Cảnh báo tồn kho & Trạng thái:** Danh sách sản phẩm sắp hết hàng (`stock < 10`) và danh sách sản phẩm đang `STOPPED`.
-
----
-
-## 7. Kịch bản kiểm thử trọng tâm (`TC`)
-
-| Mã TC | Tình huống kiểm thử | Kết quả mong đợi |
-| :--- | :--- | :--- |
-| **TC-01** | Lập hóa đơn hợp lệ gồm nhiều món, có cộng dồn món nhập trùng và giảm giá `10%` | Sinh mã `HDyyyyMMdd-nnnn`, tính đúng tổng tiền, trừ đúng tồn kho từng món. |
-| **TC-02** | Lập hóa đơn có 2 món: món 1 đủ hàng, món 2 vượt quá tồn kho | Báo lỗi thiếu hàng; món 1 **không** bị trừ tồn kho; không sinh hóa đơn mới. |
-| **TC-03** | Thêm sản phẩm trạng thái `STOPPED` vào giỏ hàng | Hệ thống từ chối và thông báo sản phẩm đã ngừng kinh doanh (`BR-03`). |
-| **TC-04** | Quản lý hủy một hóa đơn đang ở trạng thái `PAID` | Hóa đơn chuyển sang `CANCELLED`; tồn kho các món trong đơn được cộng trả đầy đủ. |
-| **TC-05** | Thực hiện hủy lại hóa đơn đã có trạng thái `CANCELLED` | Báo lỗi từ chối hủy và không cộng trùng tồn kho lần hai (`BR-06`). |
-| **TC-06** | Nhập kho theo lô 3 sản phẩm, trong đó mã sản phẩm thứ 3 không tồn tại | Báo lỗi không tìm thấy mã; 2 sản phẩm đầu không bị cộng tồn kho. |
-| **TC-07** | Đổi giá bán của `SP01` từ `25,000 đ` lên `30,000 đ` sau khi đã bán 1 đơn | Hóa đơn cũ vẫn giữ nguyên đơn giá `25,000 đ` và tổng doanh thu cũ không đổi (`BR-07`). |
-| **TC-08** | Xóa danh mục `DM01` khi vẫn còn sản phẩm thuộc danh mục này | Chặn xóa và thông báo rõ ràng (`BR-05`). |
-
----
-
-## 8. Lộ trình triển khai theo tiến độ học (8 Bước)
-
-| Bước | Thời điểm | Nội dung triển khai | Kiến thức áp dụng |
-| :--- | :--- | :--- | :--- |
-| **Bước 1** | Buổi 1–2 | Dựng repo, phân công nhiệm vụ, vẽ Class Diagram, code 5 lớp thực thể `model` kèm validation setter và `Main` test OOP | **Slide 1:** OOP, Encapsulation, Interface |
-| **Bước 2** | Buổi 3–4 | Code 4 `Enum` nhãn tiếng Việt, tiện ích `Input`, `SampleData` và luồng CRUD/bán hàng chạy trên RAM (`Map`, `List`) | **Slide 2:** Enum, Collection, Map |
-| **Bước 3** | Buổi 5–6 | Nâng cấp tìm kiếm, sắp xếp sản phẩm/hóa đơn, phân trang `Page<T>` và thống kê bằng Stream API | **Slide 3:** Lambda, Stream API |
-| **Bước 4** | Buổi 7–8 | Tạo hệ thống Exception riêng (`BusinessException`, `DuplicateIdException`, `NotFoundException`, `DataAccessException`) và giao diện `GenericRepository<T, ID>` | **Slide 4:** Exception, Generics |
-| **Bước 5** | Buổi 9–10 | Cài đặt `FileRepository` lưu/đọc `data/*.dat`, cơ chế backup `.bak` và hoàn thiện Giai đoạn 1 | **Slide 5:** File I/O, Serialization |
-| **Bước 6** | Buổi 11–13 | Tạo CSDL `cafe_pos`, cấu hình `db.properties`, viết `DBConnect`, `SqlFilter` và `JdbcRepository` cho các bảng | **Slide 6:** JDBC, PreparedStatement |
-| **Bước 7** | Buổi 14–15 | Áp dụng `Transaction` cho bán/hủy hóa đơn, `Batch` cho nhập kho và viết `MigrationService` chuyển dữ liệu File $\rightarrow$ DB | **Slide 7:** JDBC Transaction, Batch |
-| **Bước 8** | Buổi 16–18 | Đóng gói DTO bằng `record`, xuất báo cáo HTML bằng Text Block, gắn `@Author` Reflection và kiểm thử toàn bộ `TC-01`–`TC-08` | **Slide 8:** Record, Text Block, Annotation |
-
----
-
-## 9. Thiết kế kiến trúc & Sơ đồ lớp
-
-### 9.1 Sơ đồ lớp tầng `model`
-
-```mermaid
-classDiagram
-    class Identifiable~ID~ {
-        <<interface>>
-        +getId() ID
-    }
-    class Category {
-        -String id
-        -String name
-        +Category(String id, String name)
-        +getId() String
-        +setId(String id) void
-        +getName() String
-        +setName(String name) void
-    }
-    class Product {
-        -String id
-        -String name
-        -String categoryId
-        -double price
-        -int stock
-        -ProductStatus status
-        +Product(...)
-        +getId() String
-    }
-    class Staff {
-        -String id
-        -String name
-        -String phone
-        -StaffRole role
-        +Staff(...)
-        +getId() String
-    }
-    class Invoice {
-        -String id
-        -String staffId
-        -LocalDateTime createdAt
-        -PaymentMethod paymentMethod
-        -int discountPercent
-        -InvoiceStatus status
-        -List~InvoiceDetail~ details
-        +Invoice(...)
-        +addItem(String productId, int quantity, double unitPrice) void
-        +subtotal() double
-        +total() double
-    }
-    class InvoiceDetail {
-        -String productId
-        -int quantity
-        -double unitPrice
-        +InvoiceDetail(String productId, int quantity, double unitPrice)
-        +amount() double
-    }
-
-    Identifiable <|.. Category
-    Identifiable <|.. Product
-    Identifiable <|.. Staff
-    Identifiable <|.. Invoice
-    Product "*" --> "1" Category : categoryId
-    Invoice "*" --> "1" Staff : staffId
-    Invoice "1" *-- "1..*" InvoiceDetail : details
-    InvoiceDetail "*" --> "1" Product : productId
+```text
+coffee-shop-management-system/
+├── docs/
+│   └── 01-dac-ta.md                    # Tài liệu đặc tả yêu cầu & thiết kế hệ thống
+├── sql/
+│   ├── 01_schema.sql                   # Script tạo CSDL cafe_pos, 5 bảng & ràng buộc (Tín)
+│   └── 02_sample_data.sql              # Script nạp dữ liệu mẫu chuẩn khớp SampleData (Tín)
+├── lib/                                # Thư viện JDBC Driver (mssql-jdbc-*.jar)
+├── data/                               # Thư mục lưu tệp nhị phân *.dat (bỏ qua trên Git)
+├── reports/                            # Thư mục xuất báo cáo HTML (bỏ qua trên Git)
+├── src/
+│   ├── annotation/
+│   │   └── Author.java                 # Custom Annotation @Author & Reflection đọc thông tin (Tín)
+│   ├── app/
+│   │   └── Main.java                   # Điểm khởi chạy, chọn nguồn dữ liệu & chế độ --test (Nam)
+│   ├── exception/
+│   │   ├── BusinessException.java      # Lỗi vi phạm quy tắc nghiệp vụ
+│   │   ├── DataAccessException.java    # Lỗi truy xuất File I/O hoặc SQL/JDBC
+│   │   ├── DuplicateIdException.java   # Lỗi trùng khóa chính / mã định danh
+│   │   └── NotFoundException.java      # Lỗi không tìm thấy thực thể theo mã
+│   ├── model/
+│   │   ├── Identifiable.java           # Interface chuẩn hóa getId() cho GenericRepository
+│   │   ├── Category.java               # Thực thể Danh mục (DMxx)
+│   │   ├── Product.java                # Thực thể Sản phẩm (SPxx)
+│   │   ├── ProductStatus.java          # Enum: SELLING, STOPPED
+│   │   ├── Staff.java                  # Thực thể Nhân viên (NVxx)
+│   │   ├── StaffRole.java              # Enum: MANAGER, CASHIER
+│   │   ├── Invoice.java                # Thực thể Hóa đơn (HDyyyyMMdd-xxxx)
+│   │   ├── InvoiceDetail.java          # Thực thể Chi tiết hóa đơn
+│   │   ├── InvoiceStatus.java          # Enum: PAID, CANCELLED
+│   │   ├── PaymentMethod.java          # Enum: CASH, CARD, E_WALLET
+│   │   ├── Page.java                   # Record phân trang tổng quát Page<T>
+│   │   └── Criteria.java               # Các DTO tiêu chí lọc, sắp xếp & thống kê
+│   ├── repository/
+│   │   ├── GenericRepository.java      # Interface CRUD chuẩn <T, ID>
+│   │   ├── Repositories.java           # Các interface Repository chuyên biệt
+│   │   ├── memory/                     # Lưu trữ trên RAM (In-Memory)
+│   │   ├── file/                       # Lưu trữ tệp nhị phân data/*.dat (Tín, Nam, Thiện)
+│   │   └── jdbc/                       # Lưu trữ SQL Server cafe_pos (Tín, Nam, Thiện, Tuấn)
+│   ├── service/
+│   │   ├── CatalogService.java         # Nghiệp vụ danh mục, sản phẩm & nhập kho (Thiện)
+│   │   ├── StaffService.java           # Nghiệp vụ nhân viên (Tuấn)
+│   │   ├── SalesService.java           # Nghiệp vụ lập đơn, hủy đơn & tra cứu (Nam)
+│   │   ├── ReportService.java        # Nghiệp vụ thống kê & xuất báo cáo HTML (Bình)
+│   │   ├── MigrationService.java       # Di trú dữ liệu File -> SQL Server (Nam)
+│   │   └── SampleData.java             # Khởi tạo dữ liệu mẫu chuẩn (Tuấn)
+│   ├── ui/
+│   │   ├── Input.java                  # Tiện ích nhập & kiểm tra dữ liệu Console (Tuấn)
+│   │   ├── ConsoleUI.java              # Menu chính & luồng bán hàng POS (Nam)
+│   │   ├── CatalogMenu.java            # Giao diện quản lý danh mục & sản phẩm (Thiện)
+│   │   ├── StaffMenu.java              # Giao diện quản lý nhân viên & đổi ca (Tuấn)
+│   │   └── ReportMenu.java             # Giao diện thống kê & xuất HTML (Bình)
+│   └── test/
+│       └── SystemTestRunner.java       # Bộ kiểm thử tự động toàn diện (Tuấn & Nam)
+├── db.properties.example               # Mẫu cấu hình kết nối SQL Server
+├── CONTRIBUTING.md                     # Quy trình làm việc nhóm & chuẩn Git
+├── PULL_REQUEST_TEMPLATE.md            # Mẫu kiểm duyệt Pull Request
+└── README.md                           # Hướng dẫn cài đặt & vận hành hệ thống
 ```
 
-### 9.2 Cấu trúc gói (Packages) chuẩn của dự án
-* `app`: `Main` (khởi tạo nguồn dữ liệu, chọn nhân viên trực ca và chạy vòng lặp giao diện).
-* `model`: `Identifiable`, `Category`, `Product`, `Staff`, `Invoice`, `InvoiceDetail`, `Page`, `Criteria`, và 4 enum (`ProductStatus`, `StaffRole`, `InvoiceStatus`, `PaymentMethod`).
-* `exception`: `BusinessException`, `DuplicateIdException`, `NotFoundException` (checked) và `DataAccessException` (unchecked).
-* `repository`: `GenericRepository<T, ID>`, `Repositories`.
-* `repository.file`: `FileRepository<T, ID>` (lưu/đọc `Map<ID, T>` xuống `data/*.dat`).
-* `repository.jdbc`: `DBConnect`, `SqlFilter`, `JdbcCategoryRepository`, `JdbcProductRepository`, `JdbcStaffRepository`, `JdbcInvoiceRepository`.
-* `service`: `CatalogService`, `StaffService`, `SalesService`, `ReportService`, `MigrationService`, `SampleData`.
-* `ui`: `ConsoleUI`, `Input`, `FormatUtil`.
-* `annotation`: `@Author`.
+---
+
+## 3. Đặc Tả Yêu Cầu Chức Năng & Quy Tắc Nghiệp Vụ
+
+### 3.1. Danh sách Yêu cầu Chức năng (`FR-01` – `FR-14`)
+
+| Mã | Tên chức năng | Mô tả chi tiết | Phụ trách |
+| :--- | :--- | :--- | :--- |
+| **FR-01** | Quản lý Danh mục | Thêm, sửa, xóa, xem danh sách danh mục (`DM01`..); chặn xóa danh mục đang có sản phẩm thuộc về. | Thiện |
+| **FR-02** | Quản lý Sản phẩm | Thêm, sửa, đổi trạng thái (`SELLING`/`STOPPED`), xóa sản phẩm; chặn xóa sản phẩm đã từng xuất hiện trong hóa đơn. | Thiện |
+| **FR-03** | Quản lý Nhân viên | Thêm, sửa thông tin, phân quyền (`MANAGER`/`CASHIER`), xóa nhân viên; chặn xóa nhân viên đã lập hóa đơn. | Tuấn / Tín |
+| **FR-04** | Chọn & Đổi ca trực | Bắt buộc chọn nhân viên trực ca khi vào quầy POS; hỗ trợ đổi ca trực trong phiên làm việc và ghi nhận đúng `staffId` lên hóa đơn. | Tuấn |
+| **FR-05** | Bán hàng / Lập hóa đơn | Thêm nhiều món vào giỏ hàng, kiểm tra trạng thái đang bán và tồn kho, áp dụng giảm giá `0–50%`, chọn phương thức thanh toán (`CASH`, `CARD`, `E_WALLET`), lưu hóa đơn và trừ tồn kho nguyên tử. | Nam |
+| **FR-06** | Hủy hóa đơn | Chuyển trạng thái hóa đơn từ `PAID` sang `CANCELLED` và tự động cộng hoàn trả số lượng tồn kho cho từng món trong đơn. | Nam |
+| **FR-07** | Nhập kho theo lô | Nhập thêm số lượng tồn kho cho nhiều sản phẩm cùng lúc trong một phiên; kiểm tra toàn bộ danh sách hợp lệ trước khi cập nhật (sử dụng JDBC Batch ở GĐ2). | Thiện |
+| **FR-08** | Tìm kiếm & Phân trang Sản phẩm | Tìm theo từ khóa (mã/tên), danh mục, khoảng giá, trạng thái, chỉ món sắp hết hàng (`stock < 10`); hỗ trợ sắp xếp và phân trang `Page<Product>`. | Thiện |
+| **FR-09** | Tra cứu & Phân trang Hóa đơn | Lọc hóa đơn theo khoảng ngày, mã nhân viên, trạng thái, phương thức thanh toán; hiển thị tên nhân viên, sắp xếp và phân trang `Page<InvoiceSummary>`. | Nam / Tuấn |
+| **FR-10** | Thống kê Doanh thu | Cung cấp 7 báo cáo thống kê (`TK-01` đến `TK-07`) bằng Stream API; mọi phép tính doanh thu chỉ tính hóa đơn `PAID`. | Bình |
+| **FR-11** | Xuất báo cáo HTML | Xuất báo cáo doanh thu tổng hợp và danh sách món bán chạy ra tệp `.html` chuẩn `UTF-8` bằng Java Text Block. | Bình |
+| **FR-12** | Lưu trữ File nhị phân | Lưu và đọc toàn bộ dữ liệu thực thể xuống `data/*.dat` qua Serialization (`FileRepository<T, ID>`). | Tín / Nam / Thiện |
+| **FR-13** | Lưu trữ SQL Server & Chuyển đổi nguồn | Cài đặt tầng `JdbcRepository` kết nối SQL Server `cafe_pos` và cho phép chọn nguồn dữ liệu (RAM / File / SQL Server) khi khởi động. | Tín / Nam / Thiện |
+| **FR-14** | Di trú dữ liệu (Migration) | Chuyển dữ liệu từ tệp `data/*.dat` sang SQL Server theo đúng thứ tự khóa ngoại (`Category` → `Staff` → `Product` → `Invoice`), tự động bỏ qua bản ghi đã tồn tại. | Nam |
+
+### 3.2. Quy tắc Nghiệp vụ Bắt buộc (`BR-01` – `BR-08`)
+* **BR-01 (Tính duy nhất của mã định danh):** Mã thực thể không phân biệt chữ hoa/thường khi tra cứu, tự động chuẩn hóa in hoa (`DM01`, `SP01`, `NV01`). Trùng mã khi thêm mới ném `DuplicateIdException`.
+* **BR-02 (Ràng buộc giá & tồn kho):** Giá bán sản phẩm phải `> 0`; số lượng tồn kho phải `>= 0`.
+* **BR-03 (Sản phẩm ngừng bán):** Sản phẩm có trạng thái `STOPPED` không được phép thêm vào giỏ hàng khi lập hóa đơn mới.
+* **BR-04 (Kiểm soát tồn kho khi bán):** Số lượng đặt mua của mỗi món không được vượt quá tồn kho hiện tại (`stock`).
+* **BR-05 (Giới hạn chiết khấu):** Phần trăm giảm giá trên hóa đơn phải nằm trong đoạn `[0, 50]`.
+* **BR-06 (Tính toàn vẹn tham chiếu):** Không cho phép xóa danh mục đang chứa sản phẩm; không cho phép xóa sản phẩm hoặc nhân viên đã có dữ liệu hóa đơn liên quan.
+* **BR-07 (Quy tắc hủy đơn):** Chỉ được hủy hóa đơn đang ở trạng thái `PAID`; hóa đơn đã `CANCELLED` không thể hủy lần hai.
+* **BR-08 (Nguyên tắc tính doanh thu):** Các hóa đơn có trạng thái `CANCELLED` bị loại trừ hoàn toàn khỏi mọi báo cáo doanh thu và số lượng bán ra.
+
+### 3.3. Danh mục 7 Chỉ số Thống kê (`TK-01` – `TK-07`)
+* **TK-01:** Doanh thu và số lượng đơn theo từng ngày trong `N` ngày gần nhất (`DailyRevenue`, điền đủ cả ngày có doanh thu `0 đ`).
+* **TK-02:** Tốp `N` sản phẩm bán chạy nhất theo tổng số lượng bán (`ProductSales`).
+* **TK-03:** Tổng doanh thu theo từng nhân viên thu ngân/quản lý.
+* **TK-04:** Số lượng hóa đơn theo từng phương thức thanh toán (`CASH`, `CARD`, `E_WALLET`).
+* **TK-05:** Khung giờ cao điểm (0–23h) có số lượng giao dịch thành công nhiều nhất.
+* **TK-06:** Cơ cấu doanh thu theo từng danh mục sản phẩm.
+* **TK-07:** Cảnh báo vận hành gồm danh sách sản phẩm tồn kho thấp (`stock < ngưỡng`) và danh sách sản phẩm đang bán nhưng không phát sinh đơn trong `N` ngày gần đây.
+
+---
+
+## 4. Thiết Kế Mô Hình Dữ Liệu & Cơ Sở Dữ Liệu
+
+### 4.1. Các lớp Thực thể (`model`)
+* `Category(String id, String name)`
+* `Product(String id, String name, String categoryId, double price, int stock, ProductStatus status)`
+* `Staff(String id, String name, String phone, StaffRole role)`
+* `Invoice(String id, String staffId, LocalDateTime createdAt, PaymentMethod paymentMethod, int discountPercent, InvoiceStatus status, List<InvoiceDetail> details)`
+* `InvoiceDetail(String invoiceId, String productId, int quantity, double unitPrice)` — lưu `unitPrice` tại thời điểm bán để bảo toàn lịch sử giá khi giá sản phẩm thay đổi về sau.
+
+### 4.2. Lược đồ CSDL SQL Server (`cafe_pos`)
+Cơ sở dữ liệu gồm 5 bảng quan hệ với các ràng buộc toàn vẹn ở mức CSDL:
+1. `categories(id VARCHAR(10) PK, name NVARCHAR(100) NOT NULL)`
+2. `products(id VARCHAR(10) PK, name NVARCHAR(150) NOT NULL, category_id VARCHAR(10) FK, price DECIMAL(12,2) CHECK(price > 0), stock INT CHECK(stock >= 0), status VARCHAR(20) CHECK(status IN ('SELLING','STOPPED')))`
+3. `staff(id VARCHAR(10) PK, name NVARCHAR(100) NOT NULL, phone VARCHAR(15) NOT NULL, role VARCHAR(20) CHECK(role IN ('MANAGER','CASHIER')))`
+4. `invoices(id VARCHAR(20) PK, staff_id VARCHAR(10) FK, created_at DATETIME2 NOT NULL, payment_method VARCHAR(20) CHECK(payment_method IN ('CASH','CARD','E_WALLET')), discount_percent INT CHECK(discount_percent BETWEEN 0 AND 50), status VARCHAR(20) CHECK(status IN ('PAID','CANCELLED')))`
+5. `invoice_details(invoice_id VARCHAR(20) FK, product_id VARCHAR(10) FK, quantity INT CHECK(quantity >= 1), unit_price DECIMAL(12,2) CHECK(unit_price > 0), PRIMARY KEY(invoice_id, product_id))`
+
+---
+
+## 5. Yêu Cầu Phi Chức Năng (`NFR-01` – `NFR-06`)
+
+* **NFR-01 (Toàn vẹn giao dịch):** Thao tác lập hóa đơn (`FR-05`), hủy hóa đơn (`FR-06`) và nhập kho theo lô (`FR-07`) phải đảm bảo tính nguyên tử (Transaction `commit`/`rollback`).
+* **NFR-02 (Bảo mật & Chống SQL Injection):** Mọi truy vấn động trong `SqlFilter` và `JdbcRepository` phải dùng tham số `?` của `PreparedStatement`; thông tin đăng nhập SQL Server lưu tại `db.properties` (bị loại trừ khỏi Git).
+* **NFR-03 (Kiến trúc mở rộng):** Việc bổ sung nguồn lưu trữ mới không làm thay đổi mã nguồn tầng `Service` và `UI`.
+* **NFR-04 (Mã hóa UTF-8):** Toàn bộ mã nguồn, dữ liệu tệp, tệp HTML xuất ra và chuỗi Unicode (`NVARCHAR`) trên SQL Server hiển thị chính xác tiếng Việt có dấu.
+* **NFR-05 (Khả năng phục hồi tệp lỗi):** Khi tệp `.dat` bị hỏng định dạng hoặc không đọc được, `FileRepository` tự động sao lưu tệp lỗi sang `<tên-tệp>.bak` và khởi tạo trạng thái rỗng an toàn mà không làm dừng chương trình.
+* **NFR-06 (Chuẩn định dạng hiển thị):** Tiền tệ hiển thị phân cách hàng nghìn kèm đơn vị `đ` (`%,.0f đ`); ngày giờ hiển thị thống nhất theo mẫu `dd/MM/yyyy HH:mm`.
+
+---
+
+## 6. Lộ Trình Triển Khai 8 Bước
+
+| Bước | Nội dung trọng tâm | Mốc bàn giao |
+| :--- | :--- | :--- |
+| **Bước 1–2** | Xây dựng 5 lớp thực thể `model`, 4 `Enum`, `Input`, `SampleData`, luồng CRUD và bán hàng cơ bản. | Hoàn thành |
+| **Bước 3** | Lọc đa tiêu chí, sắp xếp, phân trang `Page<T>` bằng Stream API và `ReportService` (`TK-01`..`TK-07`). | Hoàn thành tìm kiếm/phân trang; Bình hoàn tất `ReportService` |
+| **Bước 4** | Hệ thống `Exception` riêng, `GenericRepository<T, ID>`, `InMemory*Repository` và bộ test `SystemTestRunner`. | Hoàn thành |
+| **Bước 5** | **Mốc 1:** Xây dựng `FileRepository<T, ID>` (Tín), lưu/đọc `data/*.dat`, sao lưu `.bak` (Tín, Nam, Thiện) và xuất báo cáo HTML (Bình). | **Đang triển khai** |
+| **Bước 6** | Tạo CSDL `cafe_pos` (`01_schema.sql`, `02_sample_data.sql`), viết `DBConnect`, `SqlFilter` và `JdbcStaffRepository` (Tín). | Kế hoạch GĐ2 |
+| **Bước 7** | Triển khai `JdbcCategoryRepository`, `JdbcProductRepository` (Batch), `JdbcInvoiceRepository` (Transaction, JOIN phân trang) và `MigrationService` (Nam, Thiện, Tuấn). | Kế hoạch GĐ2 |
+| **Bước 8** | **Mốc 2:** Gắn `@Author` Reflection lên các lớp (Tín), kiểm thử tích hợp toàn bộ trên cả 2 nguồn dữ liệu và nghiệm thu. | Kế hoạch GĐ2 |
+
+---
+
+## 7. Kịch Bản Kiểm Thử Nghiệm Thu (`TC-01` – `TC-11`)
+
+* **TC-01:** Khởi tạo dữ liệu mẫu chuẩn (`4` danh mục, `4` nhân viên, `15` sản phẩm, `30` hóa đơn).
+* **TC-02:** Lập hóa đơn hợp lệ nhiều món có giảm giá, kiểm tra tính tổng tiền và tự động trừ tồn kho.
+* **TC-03:** Chặn bán sản phẩm `STOPPED` (`BR-03`), chặn mua vượt tồn kho (`BR-04`) và chặn giảm giá ngoài khoảng `0–50%` (`BR-05`).
+* **TC-04:** Hủy hóa đơn `PAID`, kiểm tra trạng thái chuyển sang `CANCELLED`, cộng trả tồn kho và chặn hủy lần hai (`BR-07`).
+* **TC-05:** Chặn xóa danh mục đang có sản phẩm và chặn xóa sản phẩm/nhân viên đã có hóa đơn (`BR-06`).
+* **TC-06:** Nhập kho theo lô nhiều sản phẩm; kiểm tra rollback toàn bộ nếu có một sản phẩm không hợp lệ (`FR-07`).
+* **TC-07:** Tìm kiếm, lọc đa tiêu chí, sắp xếp và phân trang sản phẩm (`FR-08`) và hóa đơn (`FR-09`).
+* **TC-08:** Kiểm thử 7 báo cáo thống kê (`TK-01`..`TK-07`) và xác minh đơn `CANCELLED` không tính vào doanh thu (`BR-08`).
+* **TC-09:** Lưu và đọc lại dữ liệu bền vững qua `data/*.dat` (`FR-12`).
+* **TC-10:** Phục hồi an toàn và tạo tệp `.bak` khi tệp `.dat` bị hỏng (`NFR-05`).
+* **TC-11:** Di trú dữ liệu từ File sang SQL Server (`FR-14`) đảm bảo không trùng lặp bản ghi khi chạy lại.

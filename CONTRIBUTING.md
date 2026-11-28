@@ -1,77 +1,69 @@
-# Contributing Guidelines / Quy Chuẩn Đóng Góp Dự Án
-**Project:** Coffee Shop Management & POS System (`coffee-shop-management-system`)  
-**Course / Track:** MOB1024 – Java OOP, File I/O & SQL Server JDBC
+# QUY TRÌNH LÀM VIỆC NHÓM & QUY CHUẨN GIT (CONTRIBUTING)
 
-Tài liệu này quy định quy trình làm việc trên Git, tiêu chuẩn viết mã và quy tắc phối hợp dành cho toàn bộ thành viên phát triển dự án.
+Tài liệu này quy định cách thức phối hợp, phân nhánh Git, quy chuẩn viết mã và kiểm duyệt Pull Request cho **5 thành viên** phát triển dự án **Coffee Shop Management & POS System**.
 
 ---
 
-## 1. Team Ownership & Branching Strategy / Phân Công & Chia Nhánh
+## 1. Cấu Trúc Nhánh & Phân Công Thành Viên
 
-Mọi thành viên **tuyệt đối không commit hoặc push trực tiếp lên nhánh `main`**. Tất cả thay đổi phải được thực hiện trên nhánh tính năng cá nhân và ghép vào `main` thông qua **Pull Request (PR)**.
+* **`main`:** Nhánh chính thức luôn ở trạng thái biên dịch sạch và vượt qua 100% bài kiểm thử trong `SystemTestRunner`. **Không push trực tiếp tính năng chưa kiểm thử lên `main`.**
+* **Nhánh tính năng cá nhân:** Mỗi thành viên phát triển trên nhánh riêng tách từ `main`:
 
-| Thành viên | Vai trò | Nhánh làm việc (`Branch`) | Phân hệ & Mã chức năng (`FR`) |
-| :--- | :--- | :--- | :--- |
-| **Nam** | Tech Lead / Core | `feat/sales` | Kiến trúc khung, Bán hàng, Giỏ hàng, Hóa đơn (`FR-05`, `FR-06`, `FR-13`, `FR-14`) |
-| **Thiện** | Core Developer | `feat/catalog` | Danh mục, Sản phẩm, Nhập kho (`FR-01`, `FR-02`, `FR-07`, `FR-08`) |
-| **Tuấn** | Core Developer | `feat/staff-ui` | Nhân sự, Phân ca, Tiện ích `Input`, `SampleData` (`FR-03`, `FR-04`, `FR-09`) |
-| **Bình** | Data & Reporting | `feat/report` | Thống kê doanh thu, Xuất báo cáo HTML, SQL Script (`FR-10`, `FR-11`, `FR-12`) |
-
-### Quy trình Git hằng ngày (Daily Git Workflow)
-1. **Đồng bộ `main` trước khi bắt đầu code:**
-   ```bash
-   git checkout feat/<ten-nhanh-cua-ban>
-   git pull origin main
-   ```
-2. **Code và kiểm thử cục bộ** trong phạm vi package được phân công.
-3. **Commit theo từng đầu việc nhỏ** đã chạy ổn định và đẩy lên nhánh cá nhân:
-   ```bash
-   git add .
-   git commit -m "feat(scope): mo ta ngan gon thay doi"
-   git push origin feat/<ten-nhanh-cua-ban>
-   ```
-4. **Tạo Pull Request** trên GitHub (`base: main` <- `compare: feat/<ten-nhanh-cua-ban>`) và thông báo cho Leader kiểm duyệt.
+| Thành viên | Nhánh Git | Phạm vi tệp nguồn phụ trách |
+| :--- | :--- | :--- |
+| **Nam** *(Tech Lead)* | `feat/sales` | `Main.java`, `ConsoleUI.java`, `SalesService.java`, `InMemoryInvoiceRepository.java`, `FileInvoiceRepository.java`, `JdbcInvoiceRepository.java`, `MigrationService.java` |
+| **Thiện** | `feat/catalog` | `CatalogMenu.java`, `CatalogService.java`, `InMemoryCategoryRepository.java`, `InMemoryProductRepository.java`, `FileCategoryRepository.java`, `FileProductRepository.java`, `JdbcCategoryRepository.java`, `JdbcProductRepository.java` |
+| **Tuấn** | `feat/staff-ui` | `Input.java`, `StaffMenu.java`, `StaffService.java`, `SampleData.java`, `InMemoryStaffRepository.java`, `SystemTestRunner.java`, truy vấn phân trang hóa đơn SQL |
+| **Bình** | `feat/report` | `Page.java`, `Criteria.java`, `ReportService.java`, `ReportMenu.java` |
+| **Tín** | `feat/file-core`<br>`feat/db-core` | `repository/file/FileRepository.java`, `repository/file/FileStaffRepository.java`, `sql/01_schema.sql`, `sql/02_sample_data.sql`, `repository/jdbc/DBConnect.java`, `repository/jdbc/SqlFilter.java`, `repository/jdbc/JdbcStaffRepository.java`, `annotation/Author.java`, tài liệu dự án |
 
 ---
 
-## 2. Commit Message Convention / Quy Tắc Đặt Tên Commit
+## 2. Quy Trình Phát Triển & Mở Pull Request
 
-Sử dụng chuẩn **Conventional Commits** (tiếng Việt không dấu hoặc tiếng Anh ngắn gọn, rõ động từ):
-
-```text
-<type>(<scope>): <subject>
+### Bước 1: Đồng bộ `main` và tạo/cập nhật nhánh cá nhân
+```bash
+git checkout main
+git pull origin main
+git checkout -b feat/<ten-nhanh-cua-ban>
 ```
+*(Nếu nhánh đã tồn tại, chạy `git checkout feat/<ten-nhanh-cua-ban>` rồi `git merge main` để cập nhật code mới nhất của cả nhóm.)*
 
-* **`feat`**: Thêm tính năng hoặc nghiệp vụ mới (VD: `feat(sales): implement cart item quantity accumulation`)
-* **`fix`**: Sửa lỗi logic hoặc lỗi biên dịch (VD: `fix(catalog): prevent deleting category containing active products`)
-* **`refactor`**: Tối ưu cấu trúc code nhưng không đổi nghiệp vụ (VD: `refactor(report): migrate revenue loop to Stream API`)
-* **`docs`**: Cập nhật tài liệu, README, SQL script (VD: `docs(sql): add initial schema for cafe_pos database`)
-* **`chore`**: Cấu hình `.gitignore`, dọn dẹp file rác (VD: `chore: ignore compiled class files and IDE configs`)
+### Bước 2: Phát triển và kiểm thử cục bộ
+1. Tuân thủ chuẩn mã hóa **UTF-8** cho tất cả tệp `.java`, `.sql`, `.md`.
+2. Biên dịch và chạy bộ kiểm thử tự động trước khi commit:
+   ```bash
+   java -Dfile.encoding=UTF-8 -cp bin app.Main --test
+   ```
+3. Đảm bảo không commit các thư mục/tệp cục bộ đã khai báo trong `.gitignore` (`bin/`, `*.class`, `.vscode/`, `data/`, `data-test/`, `reports/`, `db.properties`).
 
----
+### Bước 3: Commit theo chuẩn Conventional Commits
+Sử dụng tiền tố rõ ràng để dễ theo dõi lịch sử đóng góp của từng thành viên:
+* `feat(<scope>): ...` — Thêm chức năng mới (ví dụ: `feat(file): xay dung FileRepository generic va co che backup .bak`)
+* `fix(<scope>): ...` — Sửa lỗi logic hoặc lỗi biên dịch
+* `test(<scope>): ...` — Bổ sung hoặc cập nhật ca kiểm thử trong `SystemTestRunner`
+* `docs(<scope>): ...` — Cập nhật tài liệu `.md` hoặc kịch bản `.sql`
+* `chore(<scope>): ...` — Cấu hình `.gitignore`, thư viện `lib/`, cấu trúc dự án
 
-## 3. Coding Standards & Architecture Rules / Tiêu Chuẩn Lập Trình
-
-### A. Kiến trúc phân tầng (`NFR-02`)
-* **`ui` (`ConsoleUI`, `Input`)**: Chỉ chịu trách nhiệm hiển thị menu, định dạng bảng và nhận dữ liệu từ bàn phím. Không chứa logic tính tiền hay kiểm tra nghiệp vụ.
-* **`service`**: Chứa toàn bộ xử lý nghiệp vụ và ràng buộc (`BR-01` – `BR-08`). **Tuyệt đối không** gọi `Scanner` hoặc `System.out.println` bên trong tầng `service` và `model`.
-* **`repository`**: Chỉ đảm nhận đọc/ghi dữ liệu (RAM `Map`, File `.dat`, hoặc SQL Server `PreparedStatement`).
-* **`model`**: Đóng gói dữ liệu, kiểm tra tính hợp lệ (`Validation`) ngay trong các phương thức `set...()` và ném ngoại lệ rõ nghĩa khi dữ liệu sai.
-
-### B. Quy tắc đặt tên Java (Naming Conventions)
-* **Class, Enum, Interface, Record:** `PascalCase` (VD: `InvoiceDetail`, `ProductStatus`, `DailyRevenue`).
-* **Method, Variable:** `camelCase` (VD: `calculateTotalAmount()`, `discountPercent`).
-* **Constant (`static final`):** `UPPER_SNAKE_CASE` (VD: `MAX_DISCOUNT_PERCENT = 50`).
-* **Database & SQL:** `snake_case` (VD: `invoice_details`, `unit_price`).
-
-### C. Ràng buộc dữ liệu bắt buộc
-* **Không crash khi nhập sai (`NFR-01`)**: Mọi thao tác nhập số/ngày/mã từ console phải đi qua lớp tiện ích `Input`.
-* **Định dạng hiển thị (`NFR-06`)**: Tiền tệ hiển thị dạng `35,000 đ`; thời gian hiển thị dạng `dd/MM/yyyy HH:mm`.
-* **Chống SQL Injection (Giai đoạn 2)**: 100% truy vấn động phải sử dụng `PreparedStatement` với tham số `?`, tuyệt đối không nối chuỗi giá trị người dùng nhập vào câu lệnh SQL.
+### Bước 4: Đẩy nhánh và tạo Pull Request
+```bash
+git push -u origin feat/<ten-nhanh-cua-ban>
+```
+Mở Pull Request trên GitHub (`base: main` ← `compare: feat/<ten-nhanh-cua-ban>`), điền đầy đủ nội dung theo mẫu `PULL_REQUEST_TEMPLATE.md` và gắn **Nam** (`@nlhnam`) làm Reviewer.
 
 ---
 
-## 4. Code Review & Escalation / Duyệt Mã & Xử Lý Vướng Mắc
+## 3. Quy Chuẩn Viết Mã (Coding Conventions)
 
-* **Tiêu chí hoàn thành (Definition of Done):** Code biên dịch sạch không lỗi, đã test các trường hợp biên (giá <= 0, bán vượt tồn kho, trùng mã ID, xóa dữ liệu đang có liên kết) và đã `git pull origin main` để xử lý hết xung đột trước khi mở PR.
-* **Quy tắc 45 phút (Escalation Rule):** Nếu gặp lỗi logic hoặc xung đột Git xử lý quá **45 phút** chưa giải quyết được, thành viên cần chụp màn hình lỗi kèm đoạn mã liên quan gửi ngay lên nhóm chat và gắn thẻ `@Nam` để cùng tháo gỡ kịp thời.
+1. **Đặt tên chuẩn Java:**
+   * Tên lớp, interface, enum, record: `PascalCase` (`FileRepository`, `InvoiceSummary`).
+   * Tên phương thức, biến: `camelCase` (`revenueLastDays`, `addStock`).
+   * Hằng số: `UPPER_SNAKE_CASE` (`DT_FMT`).
+2. **Xử lý Ngoại lệ (Exception Handling):**
+   * Tuyệt đối không nuốt lỗi (`catch (Exception e) {}`).
+   * Sử dụng đúng hệ thống ngoại lệ của dự án: `NotFoundException`, `DuplicateIdException`, `BusinessException`, `DataAccessException`.
+3. **Định dạng hiển thị (`NFR-06`):**
+   * Tiền tệ: `String.format("%,.0f đ", amount)`
+   * Ngày giờ: `DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")`
+4. **Gắn siêu dữ liệu tác giả (`@Author`):**
+   * Mỗi thành viên gắn annotation `@Author(name = "...", branch = "...", task = "...")` lên các lớp chính do mình trực tiếp xây dựng để phục vụ nghiệm thu và đối chiếu đóng góp.
